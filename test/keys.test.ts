@@ -21,7 +21,7 @@ describe('mnemonicToZpub — BTC BIP84 account key (published vector, char-for-c
   it('the derived account zpub reproduces the published first addresses', () => {
     const { zpub } = mnemonicToZpub(MNEMONIC, { asset: 'BTC' });
     for (const { change, index, address } of BTC_VECTORS) {
-      expect(zpubToAddress(zpub, { change: change as 0 | 1, index })).toBe(address);
+      expect(zpubToAddress(zpub, { asset: 'BTC', change: change as 0 | 1, index })).toBe(address);
     }
   });
 

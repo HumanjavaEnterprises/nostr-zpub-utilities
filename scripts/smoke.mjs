@@ -77,11 +77,16 @@ for (const { label, api } of targets) {
   check(label, 'account zpub matches published vector', acct.zpub, BIP84_ZPUB);
 
   // Public-side vectors + round-trip pin against the independent oracle.
+  // asset:'BTC' is REQUIRED — the account key wears the ambiguous `zpub` prefix and
+  // the primary API refuses to guess a chain (the LTC-footgun fix).
   for (const { change, index, address } of BTC_VECTORS) {
-    const got = zpubToAddress(acct.zpub, { change, index });
+    const got = zpubToAddress(acct.zpub, { asset: 'BTC', change, index });
     check(label, `addr ${change}/${index} matches vector`, got, address);
     check(label, `addr ${change}/${index} matches oracle`, got, refAddress(acct.zpub, 'bc', index, change).address);
   }
+
+  // Footgun guard: the ambiguous zpub with NO asset must be refused, not defaulted.
+  checkThrows(label, 'ambiguous zpub without asset is refused', () => zpubToAddress(acct.zpub, { index: 0 }));
 
   // No-leak: the seed-side return value carries no mnemonic/private bytes.
   check(label, 'seed-side return has no mnemonic', JSON.stringify(acct).includes(MNEMONIC), false);

@@ -44,6 +44,52 @@ export class PrivateKeyMaterialError extends Error {
 }
 
 /**
+ * Thrown when a caller asks for an address off an AMBIGUOUS-prefix key (`xpub`/
+ * `zpub`/`tpub`/`vpub` — version bytes both BTC and LTC wallets emit) without
+ * naming the chain. Defaulting silently to BTC would hand out `bc1…` addresses for
+ * a Litecoin account (and vice versa) that no wallet is watching — a real-money
+ * footgun. The chain MUST be explicit for these prefixes.
+ */
+export class AmbiguousAssetError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AmbiguousAssetError';
+  }
+}
+
+/**
+ * Resolve which chain to encode for. A Litecoin-definite prefix (`Ltub`/`Mtub`/
+ * `ttub`) pins LTC; a Bitcoin-definite prefix (`ypub`/`upub`) pins BTC. For an
+ * AMBIGUOUS prefix the caller MUST name `asset` — otherwise we throw rather than
+ * guess. A caller-supplied `asset` is validated against any definite prefix.
+ */
+function resolveAsset(info: ZpubInfo, requested?: ChainAsset): ChainAsset {
+  if (info.asset) {
+    // Definite prefix. A conflicting explicit asset is a hard error.
+    if (requested && requested !== info.asset) {
+      throw new Error(
+        `asset mismatch — a ${info.label} is a ${info.assets.join('/')} key, but ${requested} was requested`,
+      );
+    }
+    return info.asset;
+  }
+  // Ambiguous prefix (xpub/zpub/tpub/vpub — shared by BTC and LTC).
+  if (!requested) {
+    throw new AmbiguousAssetError(
+      `a ${info.label} prefix is shared by BTC and LTC and does not pin a chain — ` +
+        'refusing to guess (defaulting to BTC would hand out an unwatched wrong-chain address). ' +
+        "Pass { asset: 'BTC' | 'LTC' }, or use zpubToAddressForAsset(zpub, asset).",
+    );
+  }
+  if (!info.assets.includes(requested)) {
+    throw new Error(
+      `asset mismatch — a ${info.label} is a ${info.assets.join('/')} key, but ${requested} was requested`,
+    );
+  }
+  return requested;
+}
+
+/**
  * Throw if `value` looks like PRIVATE key material — before any decode. Mirrors
  * hj-pay's `assertNoPrivateKeyMaterial`: rejects known private prefixes, a raw
  * 64-hex scalar, and anything that looks like a ≥12-word seed phrase.
@@ -204,21 +250,10 @@ export function zpubToAddress(zpub: string, opts: AddressOptions = {}): string {
       `network mismatch — ${info.label} is ${info.network}, ${opts.network} was requested`,
     );
   }
-  // Ambiguous prefix (xpub/zpub) → default to BTC HRP; a Litecoin-definite prefix
-  // (Ltub/Mtub/ttub) pins LTC. This matches hj-pay's asset resolution.
-  const asset: ChainAsset = info.asset ?? 'BTC';
-
-  const hd = HDKey.fromExtendedKey(neutral);
-  const child = hd.deriveChild(change).deriveChild(index);
-  const pub = child.publicKey;
-  if (!pub || pub.length !== 33) {
-    throw new Error('derivation did not produce a compressed public key');
-  }
-
-  const program = ripemd160(sha256(pub));
-  const hrp = HRP[asset][info.network];
-  // witness v0 + 20-byte program = P2WPKH (BIP84 / BIP173).
-  return bech32.encode(hrp, [0, ...bech32.toWords(program)]);
+  // SAFE BY DEFAULT: a definite prefix pins the chain; an AMBIGUOUS prefix forces
+  // the caller to name `asset` (throws otherwise). We never silently guess BTC.
+  const asset = resolveAsset(info, opts.asset);
+  return encodeP2wpkh(neutral, asset, info.network, change, index);
 }
 
 /**
@@ -231,12 +266,6 @@ export function zpubToAddressForAsset(
   asset: ChainAsset,
   opts: AddressOptions = {},
 ): string {
-  const info = inspectZpub(zpub);
-  if (info.asset && info.asset !== asset) {
-    throw new Error(
-      `asset mismatch — a ${info.label} is a ${info.assets.join('/')} key, but ${asset} was requested`,
-    );
-  }
   const index = opts.index ?? 0;
   if (!Number.isInteger(index) || index < 0 || index >= HARDENED) {
     throw new Error(`derivation index must be an integer in [0, 2^31), got ${index}`);
@@ -245,7 +274,104 @@ export function zpubToAddressForAsset(
   if (change !== 0 && change !== 1) {
     throw new Error(`change must be 0 or 1, got ${change}`);
   }
-  const { neutral } = decodeZpub(zpub, 'zpub');
+  const { info, neutral } = decodeZpub(zpub, 'zpub');
+  if (opts.network && opts.network !== info.network) {
+    throw new Error(
+      `network mismatch — ${info.label} is ${info.network}, ${opts.network} was requested`,
+    );
+  }
+  const resolved = resolveAsset(info, asset);
+  return encodeP2wpkh(neutral, resolved, info.network, change, index);
+}
+
+export interface ZpubCheck {
+  ok: boolean;
+  info?: ZpubInfo;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Go-live preflight for a supplied account key — mirrors hj-pay's `checkXpub`.
+ * Never throws; returns findings so a caller (e.g. a /health probe) can surface
+ * them without crashing.
+ *
+ * The load-bearing checks: this library ALWAYS emits BIP84 P2WPKH. If a caller
+ * hands in a BIP44 `Ltub`/`xpub` (from an m/44' account), or a key at the wrong
+ * depth, the `bc1`/`ltc1` addresses are derived from the right chain of keys but
+ * will NOT appear in a wallet that is only watching its legacy/other script type.
+ * The ambiguous-prefix case is flagged too — the exact wrong-chain footgun the
+ * primary derivation API now refuses outright.
+ *
+ * @param zpub - the extended public key to check
+ * @param asset - the chain it is configured for
+ * @param label - a name used in messages
+ */
+export function checkXpub(zpub: string, asset: ChainAsset, label = 'zpub'): ZpubCheck {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let info: ZpubInfo | undefined;
+  try {
+    info = inspectZpub(zpub, label);
+  } catch (err) {
+    errors.push(err instanceof Error ? err.message : String(err));
+    return { ok: false, errors, warnings };
+  }
+  if (!info.assets.includes(asset)) {
+    errors.push(
+      `${label}: a ${info.label} is a ${info.assets.join('/')} key, but it is configured as ${asset}`,
+    );
+  } else if (info.asset === null) {
+    warnings.push(
+      `${label}: prefix "${info.label}" does not pin a chain (Litecoin has no registered BIP84 version byte). ` +
+        `It will be treated as ${asset} — confirm this is the ${asset} account key, because the two chains ` +
+        'derive different addresses from the same key and only one wallet will be watching.',
+    );
+  }
+  if (info.depth !== 3) {
+    warnings.push(
+      `${label}: BIP32 depth is ${info.depth}, expected 3 (an ACCOUNT key, m/84'/coin'/0'). ` +
+        'Addresses will be derived as <key>/<change>/<index> — confirm that matches your wallet.',
+    );
+  }
+  if (info.purpose !== 'bip84') {
+    warnings.push(
+      `${label}: prefix "${info.label}" implies ${info.purpose}, but this library always emits BIP84 ` +
+        'P2WPKH. Export the NATIVE SEGWIT account key from your wallet so it watches these addresses.',
+    );
+  }
+  return { ok: errors.length === 0, info, errors, warnings };
+}
+
+/**
+ * Go-live guard — mirrors hj-pay's `assertDistinctXpubs`. The BTC and LTC account
+ * keys MUST be different keys. Pasting the same key into both is the single most
+ * likely mistake, and because `xpub`/`zpub` are ambiguous prefixes nothing else
+ * would catch it — the two chains would derive different addresses from the same
+ * key and only one wallet would ever see the money.
+ *
+ * @param zpubBtc - the key configured for BTC
+ * @param zpubLtc - the key configured for LTC
+ */
+export function assertDistinctXpubs(zpubBtc: string, zpubLtc: string): void {
+  const a = inspectZpub(zpubBtc, 'zpubBTC');
+  const b = inspectZpub(zpubLtc, 'zpubLTC');
+  if (a.fingerprint === b.fingerprint) {
+    throw new Error(
+      `zpubBTC and zpubLTC are the SAME key (fingerprint ${a.fingerprint}). ` +
+        'Derive/export a separate native-segwit account key per chain (BTC coin 0, LTC coin 2).',
+    );
+  }
+}
+
+/** The shared, verified derivation core: neutral xpub → BIP84 P2WPKH bech32. */
+function encodeP2wpkh(
+  neutral: string,
+  asset: ChainAsset,
+  network: ZpubInfo['network'],
+  change: 0 | 1,
+  index: number,
+): string {
   const hd = HDKey.fromExtendedKey(neutral);
   const child = hd.deriveChild(change).deriveChild(index);
   const pub = child.publicKey;
@@ -253,6 +379,7 @@ export function zpubToAddressForAsset(
     throw new Error('derivation did not produce a compressed public key');
   }
   const program = ripemd160(sha256(pub));
-  const hrp = HRP[asset][info.network];
+  const hrp = HRP[asset][network];
+  // witness v0 + 20-byte program = P2WPKH (BIP84 / BIP173).
   return bech32.encode(hrp, [0, ...bech32.toWords(program)]);
 }

@@ -44,7 +44,11 @@ export {
   zpubToAddress,
   zpubToAddressForAsset,
   inspectZpub,
+  checkXpub,
+  assertDistinctXpubs,
   assertPublicOnly,
   assertNoPrivateKeyMaterial,
   PrivateKeyMaterialError,
+  AmbiguousAssetError,
+  type ZpubCheck,
 } from './derive.js';

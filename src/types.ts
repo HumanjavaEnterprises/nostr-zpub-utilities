@@ -64,6 +64,14 @@ export interface AddressOptions {
   index?: number;
   /** 0 = external/receive chain (default), 1 = change/internal. */
   change?: 0 | 1;
+  /**
+   * The chain to encode for. REQUIRED when the key's prefix is ambiguous
+   * (`xpub`/`zpub`/`tpub`/`vpub` — shared by BTC and LTC): omitting it throws an
+   * {@link AmbiguousAssetError} rather than silently guessing BTC. Optional for a
+   * chain-definite prefix (`Ltub`/`Mtub`/`ttub`/`ypub`/`upub`), where it is
+   * validated against the prefix if given.
+   */
+  asset?: ChainAsset;
   /** Assert the key's network. Throws on mismatch. */
   network?: ChainNetwork;
 }

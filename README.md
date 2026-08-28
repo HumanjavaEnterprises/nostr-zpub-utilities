@@ -86,12 +86,23 @@ const { npub, zpubBTC, zpubLTC } = await mnemonicToIdentity(MNEMONIC);
 ### Public-side — read addresses off a zpub (safe anywhere, incl. a server)
 
 ```typescript
-import { zpubToAddress, inspectZpub, assertPublicOnly } from 'nostr-zpub-utilities';
+import { zpubToAddress, inspectZpub, assertPublicOnly, checkXpub, assertDistinctXpubs } from 'nostr-zpub-utilities';
 
-assertPublicOnly(zpub);                       // throws on ANY private-key shape
-inspectZpub(zpub);                            // { label, asset, network, purpose, depth, fingerprint }
-zpubToAddress(zpub, { index: 0, change: 0 }); // 'bc1q…' (BTC) / 'ltc1…' (LTC-definite prefix)
+assertPublicOnly(zpub);                                    // throws on ANY private-key shape
+inspectZpub(zpub);                                         // { label, asset, network, purpose, depth, fingerprint }
+zpubToAddress(zpub, { asset: 'BTC', index: 0, change: 0 }); // 'bc1q…'
+zpubToAddress(ltubKey, { index: 0 });                      // 'ltc1…' — a chain-definite prefix needs no asset
+
+// Preflight before going live:
+checkXpub(zpub, 'BTC');                        // { ok, info, errors, warnings } — never throws
+assertDistinctXpubs(zpubBTC, zpubLTC);         // throws if the same key is configured for both chains
 ```
+
+> **The chain must be explicit for shared prefixes.** `xpub`/`zpub`/`tpub`/`vpub` are used by *both*
+> Bitcoin and Litecoin wallets — the version byte does not pin a chain. Calling `zpubToAddress` on such a key
+> **without `asset`** throws `AmbiguousAssetError` rather than silently defaulting to `bc1…` and handing out an
+> address no wallet is watching. A chain-definite prefix (`Ltub`/`Mtub`/`ttub`/`ypub`/`upub`) needs no
+> `asset`. Use `zpubToAddressForAsset(zpub, asset)` when you want to name the chain positionally.
 
 ## Correctness gates (in the test suite)
 

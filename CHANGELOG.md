@@ -28,6 +28,14 @@ Initial draft release — derive Bitcoin/Litecoin receiving keys from a Nostr id
   - `inspectZpub` — asset/network/purpose/label/depth/fingerprint, no derivation.
   - `assertPublicOnly` / `assertNoPrivateKeyMaterial` — the hard guard: rejects every private-key shape on
     a prefix check AND the decoded key byte (catches a `zprv` re-versioned to wear a `zpub` prefix).
+  - `checkXpub` — go-live preflight (mirrors hj-pay): never throws, returns `{ ok, info, errors, warnings }`,
+    flagging a wrong depth (≠ 3), a non-BIP84 purpose byte, or an ambiguous prefix.
+  - `assertDistinctXpubs` — catches the same account key configured for both chains (fingerprint match).
+- **Safe-by-default addressing (LTC ambiguity fix).** `xpub`/`zpub`/`tpub`/`vpub` version bytes are shared by
+  BTC and LTC, so they do not pin a chain. `zpubToAddress` now REQUIRES an explicit `{ asset }` for such an
+  ambiguous prefix and throws `AmbiguousAssetError` otherwise — it never silently defaults to `bc1…` and
+  hands out an unwatched wrong-chain address. A chain-definite prefix (`Ltub`/`Mtub`/`ttub`/`ypub`/`upub`)
+  still needs no `asset`. The verified derivation math is unchanged.
 - **`versions.ts`** — the SLIP-132 version-byte map, `PUBLIC_VERSIONS` COPIED verbatim from `hj-pay` so the
   two libraries never disagree, plus the `PRIVATE_VERSIONS` reject set.
 - **Tests (vitest)** — the published BIP84 vectors (char-for-char), the round-trip pin to an independent
