@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Testnet coin_type (derivation bug).** Seed-side derivation used the mainnet
+  coin_type on every network, so `network: 'testnet'` derived at `m/84'/0'/0'`
+  (BTC) instead of the SLIP-44 testnet path `m/84'/1'/0'` (coin 1 = "Testnet, all
+  coins"). Testnet addresses now match Sparrow/Electrum/faucet wallets. `coinFor`
+  in `keys.ts` is network-aware (mainnet BTC 0 / LTC 2; testnet 1 for both);
+  testnet serializes as `vpub` (`tb1…`/`tltc1…`). Mainnet paths and the published
+  BIP84 vectors are unchanged.
+
 ## [0.1.0] - 2026-08-28
 
 Initial draft release — derive Bitcoin/Litecoin receiving keys from a Nostr identity root.

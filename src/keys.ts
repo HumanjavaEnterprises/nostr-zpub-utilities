@@ -22,13 +22,26 @@ import { sha256 } from '@noble/hashes/sha2.js';
 import { mnemonicToSeedSync, validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 
-import { outputVersionHex, type ChainAsset } from './versions.js';
+import { outputVersionHex, type ChainAsset, type ChainNetwork } from './versions.js';
 import type { ZpubOptions, ZpubResult } from './types.js';
 
 const b58check = base58check(sha256);
 
-/** BIP44/84 coin_type per asset. BTC = 0, LTC = 2. */
-const COIN_TYPE: Record<ChainAsset, number> = { BTC: 0, LTC: 2 };
+/** SLIP-44 mainnet coin_type per asset. BTC = 0, LTC = 2. */
+const MAINNET_COIN_TYPE: Record<ChainAsset, number> = { BTC: 0, LTC: 2 };
+
+/**
+ * SLIP-44 coin_type for the BIP84 account path, NETWORK-AWARE.
+ *
+ * On mainnet each coin has its own type (BTC 0, LTC 2). On TESTNET, SLIP-44
+ * registers a single shared type — coin 1, "Testnet (all coins)" — so EVERY coin's
+ * testnet account lives at `m/84'/1'/…`. This is what Sparrow/Electrum and testnet
+ * faucets derive against; using the mainnet coin type on testnet produces addresses
+ * no real testnet wallet is watching.
+ */
+function coinFor(asset: ChainAsset, network: ChainNetwork): number {
+  return network === 'testnet' ? 1 : MAINNET_COIN_TYPE[asset];
+}
 
 /**
  * Re-serialize an extended key (as produced by @scure/bip32, which emits the
@@ -47,8 +60,10 @@ function reSerializeVersion(extendedKey: string, versionHex: string): string {
  * SEED-SIDE — enclave/client only, never a server.
  *
  * Derive the account-level BIP84 extended PUBLIC key from a raw BIP39 seed.
- * Path: `m/84'/coin'/account'` (BTC coin 0, LTC coin 2). Returns PUBLIC material
- * only: the `zpub`/`Ltub`, its path, asset, and fingerprint.
+ * Path: `m/84'/coin'/account'` — mainnet coin is BTC 0 / LTC 2; TESTNET coin is 1
+ * for BOTH (SLIP-44 "Testnet (all coins)"), so a testnet account is `m/84'/1'/0'`
+ * and serializes as a `vpub` (`tb1…`/`tltc1…` addresses). Returns PUBLIC material
+ * only: the `zpub`/`Ltub`/`vpub`, its path, asset, and fingerprint.
  *
  * @param seed - the BIP39 seed bytes (private material — keep in the enclave)
  * @param opts - asset / account / ltcLabel / network
@@ -63,7 +78,7 @@ export function seedToZpub(seed: Uint8Array, opts: ZpubOptions = {}): ZpubResult
     throw new Error(`seedToZpub: account must be an integer in [0, 2^31), got ${account}`);
   }
   const network = opts.network ?? 'mainnet';
-  const coin = COIN_TYPE[asset];
+  const coin = coinFor(asset, network);
   const path = `m/84'/${coin}'/${account}'`;
 
   const master = HDKey.fromMasterSeed(seed);
