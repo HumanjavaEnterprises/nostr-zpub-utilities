@@ -1,0 +1,103 @@
+{
+  "name": "nostr-zpub-utilities",
+  "version": "0.1.0",
+  "description": "Derive Bitcoin/Litecoin receiving keys (BIP84 zpub → addresses) from the same BIP39 seed root that yields a Nostr identity. Seed-side derivation is enclave-only and outputs PUBLIC material exclusively; the watch-only public side mirrors hj-pay byte-for-byte. ESM + CommonJS.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/browser/nostr-zpub-utilities.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/browser/nostr-zpub-utilities.min.js",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "npm run build:node && npm run build:browser",
+    "build:node": "tsc && tsc -p tsconfig.cjs.json && node scripts/fixup-cjs.mjs",
+    "build:browser": "node esbuild.browser.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "npm run build && node scripts/smoke.mjs",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags",
+    "docs": "typedoc --out docs src/index.ts",
+    "docs:serve": "npx serve docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/humanjavaenterprises/nostr-zpub-utilities.git"
+  },
+  "keywords": [
+    "nostr",
+    "bip84",
+    "bip39",
+    "bip32",
+    "zpub",
+    "slip-132",
+    "bitcoin",
+    "litecoin",
+    "hd-wallet",
+    "watch-only",
+    "receiving-keys",
+    "typescript",
+    "esm",
+    "commonjs",
+    "dual-module"
+  ],
+  "author": "vveerrgg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/humanjavaenterprises/nostr-zpub-utilities/issues"
+  },
+  "homepage": "https://github.com/humanjavaenterprises/nostr-zpub-utilities#readme",
+  "dependencies": {
+    "@noble/hashes": "2.3.0",
+    "@scure/base": "2.3.0",
+    "@scure/bip32": "2.3.0",
+    "@scure/bip39": "2.3.0"
+  },
+  "optionalDependencies": {
+    "nostr-nsec-seedphrase": "^0.8.0"
+  },
+  "peerDependencies": {
+    "nostr-nsec-seedphrase": "^0.8.0"
+  },
+  "peerDependenciesMeta": {
+    "nostr-nsec-seedphrase": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.1",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "esbuild": "^0.28.1",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.6",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.12.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "SPEC.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

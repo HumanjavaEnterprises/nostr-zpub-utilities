@@ -1,0 +1,29 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs",
+  "name": "nostr-zpub-utilities",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "plugin": ["typedoc-plugin-markdown"],
+  "theme": "default",
+  "readme": "README.md",
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Types",
+    "Seed-side",
+    "Public-side",
+    "Versions",
+    "*"
+  ],
+  "navigationLinks": {
+    "GitHub": "https://github.com/humanjavaenterprises/nostr-zpub-utilities",
+    "Standard": "https://github.com/humanjavaenterprises/nostr-zpub-utilities/blob/main/SPEC.md"
+  },
+  "validation": {
+    "invalidLink": true,
+    "notDocumented": false
+  }
+}
