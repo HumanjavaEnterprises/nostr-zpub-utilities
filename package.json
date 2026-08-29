@@ -66,7 +66,8 @@
     "@noble/hashes": "2.3.0",
     "@scure/base": "2.3.0",
     "@scure/bip32": "2.3.0",
-    "@scure/bip39": "2.3.0"
+    "@scure/bip39": "2.3.0",
+    "@scure/btc-signer": "2.4.1"
   },
   "optionalDependencies": {
     "nostr-nsec-seedphrase": "0.8.0"

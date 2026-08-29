@@ -74,8 +74,9 @@ npm install nostr-nsec-seedphrase
 ```
 
 Runtime deps are limited to the estate's audited stack (pinned exact): `@scure/bip32`, `@scure/bip39`,
-`@scure/base`, `@noble/hashes`. `nostr-nsec-seedphrase` is an **optional peer** used only by
-`mnemonicToIdentity`; the core zpub derivation has no Nostr dependency.
+`@scure/base`, `@noble/hashes`, and `@scure/btc-signer` (the PSBT layer — `npm audit --omit=dev` clean at
+add time). `nostr-nsec-seedphrase` is an **optional peer** used only by `mnemonicToIdentity`; the core zpub
+derivation has no Nostr dependency.
 
 ## Quick Start
 
@@ -116,6 +117,49 @@ assertDistinctXpubs(zpubBTC, zpubLTC);         // throws if the same key is conf
 > address no wallet is watching. A chain-definite prefix (`Ltub`/`Mtub`/`ttub`/`ypub`/`upub`) needs no
 > `asset`. Use `zpubToAddressForAsset(zpub, asset)` when you want to name the chain positionally.
 
+### Spend-side — PSBT (ENCLAVE/CLIENT ONLY, CoinJoin-compatible)
+
+Build, sign, and merge PSBTs for BTC/LTC spends of inputs **you already own**. A thin, pure wrapper over
+[`@scure/btc-signer`](https://github.com/paulmillr/scure-btc-signer) — no UTXO fetching, no broadcast, no
+coordinator. The load-bearing primitive is `signOnlyOurInputs`: it signs **only** the indices you declare
+you own and never touches the rest, which is exactly what lets you **participate** in a CoinJoin without
+**coordinating** one.
+
+```typescript
+import { createPsbt, Psbt } from 'nostr-zpub-utils';
+
+// Build a spend — the caller supplies each input's prevout (we never fetch UTXOs):
+const p = createPsbt({ asset: 'BTC' });                        // or { asset: 'LTC', network: 'testnet' }
+p.addInput({ txid, index, witnessUtxo: { script, amount } });
+p.addOutput({ address: 'bc1q…', amount: 90_000n });           // or { script, amount }
+
+p.signOnlyOurInputs(privateKey, [0]);   // 🔒 ENCLAVE ONLY — signs ONLY index 0; other inputs untouched
+const { hex, txid } = p.finalizeAndExtract();  // raw tx hex → hand to the wallet/network layer to broadcast
+
+// Participate in a coordinator's join transaction without coordinating it:
+const mine = Psbt.fromPsbt(sharedPsbtBytes, { asset: 'BTC' }); // their inputs + outputs, merged in
+mine.signOnlyOurInputs(privateKey, [myIndex]);                 // sign ONLY ours
+const partiallySigned = mine.toPsbt();                         // hand back; a coordinator combines the parts
+```
+
+> 🔒 **Signing is enclave/client-only.** `signOnlyOurInputs` touches a private key — same boundary as the
+> seed side. Building, merging, serializing, and finalizing a PSBT need no private material and are safe
+> anywhere. We are CoinJoin-**compatible** (we participate); we are **not** a coordinator, pool, or mixer —
+> running one carries real regulatory exposure. LTC has no CoinJoin ecosystem (MWEB is its privacy path, out
+> of scope); LTC support just lets one spend/merge API cover both chains.
+
+> ⚠️ **Two caveats when signing.** (1) **Prefer raw 32-byte signing keys** — the tested, supported path. An
+> `HDKey` is accepted but derives per the PSBT's own `bip32Derivation`, which this thin wrapper does not
+> populate for self-built PSBTs. (2) **Trust your inputs before signing a *loaded* PSBT.** A PSBT you receive
+> (`Psbt.fromPsbt`) carries counterparty-supplied prevouts and derivation paths — validate the input amounts
+> and that each input you sign is genuinely yours *before* calling `signOnlyOurInputs`. This is the standard
+> PSBT "verify what you sign" rule; the wrapper enforces that you only sign declared indices, not that those
+> inputs are what you think they are.
+
+> 📦 **Dependency note.** The PSBT layer pulls `@scure/btc-signer` (audited stack, `npm audit --omit=dev`
+> clean). It is a hard dependency, so watch-only/derivation-only consumers who never sign still install it;
+> ESM `import` consumers tree-shake it if they don't touch the PSBT exports.
+
 ## Correctness gates (in the test suite)
 
 - **BIP84 published vectors** — the `abandon … about` mnemonic derives the canonical account
@@ -147,9 +191,11 @@ const { mnemonicToZpub } = require('nostr-zpub-utils');
 
 ## Non-goals
 
-Not a wallet, not a signer, not a coin-selection/PSBT builder, not custody, not a relay client. It derives
-public receiving keys from a seed and reads addresses from a `zpub` — nothing that spends. Spending stays in
-the enclave/hardware where the seed lives.
+Not a wallet, not custody, not a relay client. Not coin-selection, not a fee estimator, not a UTXO fetcher,
+not a broadcaster — and **never a CoinJoin coordinator/pool/mixer**. It derives public receiving keys, reads
+addresses off a `zpub`, and builds/signs PSBTs for inputs the caller already owns. Signing stays in the
+enclave/hardware where the key lives; broadcasting and live chain state stay in the separate wallet/network
+layer.
 
 ## Security
 

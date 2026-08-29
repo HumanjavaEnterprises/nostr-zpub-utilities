@@ -84,16 +84,57 @@ assertPublicOnly(key: string): void                   // throws on any xprv/zprv
 - **No leakage:** a test asserts no seed/mnemonic/private byte appears in any return
   value, thrown error, or (if any) log line.
 
+## Spending side — PSBT (BTC/LTC, CoinJoin-COMPATIBLE)
+
+Added in Stage 2. A thin, PURE (no network) wrapper over `@scure/btc-signer` for the
+receiving-side spend: build a PSBT, add the inputs/outputs the caller supplies, **sign
+ONLY the inputs we own**, merge externally-supplied inputs/outputs into a shared PSBT,
+and finalize/extract the raw tx. No sighash is hand-rolled — every signature and script
+comes from `@scure/btc-signer`.
+
+- ⛔ **Signing is ENCLAVE/CLIENT-ONLY.** `Psbt.signOnlyOurInputs` touches a private key
+  and MUST run only where a private key may live — the same boundary as the seed side.
+  Building, merging, serializing, and finalizing a PSBT need no private material and are
+  safe anywhere.
+- **CoinJoin: participate, never coordinate.** `signOnlyOurInputs(key, ourIndices)` signs
+  only the indices we declare we own and never touches the rest — the exact primitive a
+  CoinJoin participant needs (`@scure/btc-signer`'s own authors document `signIdx` as the
+  safe API for this mixer/join workflow). We provide NO coordinator, pool, or mixing
+  service — running one carries real regulatory exposure (design doc, Decision 3). Being
+  join-COMPATIBLE is not that.
+- **No network, either direction.** We never fetch UTXOs (the caller supplies each
+  input's prevout / `witnessUtxo`) and never broadcast (the extracted raw tx hex goes to
+  the wallet/network layer). LTC has no real CoinJoin ecosystem — MWEB is its privacy
+  path and is out of scope; LTC support exists so one spend/merge API covers both chains.
+
+```ts
+import { createPsbt, Psbt } from 'nostr-zpub-utils';
+
+const p = createPsbt({ asset: 'BTC' });                 // or { asset:'LTC', network:'testnet' }
+p.addInput({ txid, index, witnessUtxo: { script, amount } }); // caller-supplied prevout
+p.addOutput({ address, amount });                        // or { script, amount }
+p.signOnlyOurInputs(privKey, [0]);                       // ⛔ enclave-only; signs ONLY index 0
+const { hex, txid } = p.finalizeAndExtract();            // raw tx → hand to the broadcast layer
+
+// Participate in a coordinator's join tx without coordinating:
+const mine = Psbt.fromPsbt(sharedPsbtBytes, { asset: 'BTC' });
+mine.signOnlyOurInputs(privKey, [myIndex]);              // our input only; others untouched
+const back = mine.toPsbt();                              // hand our partially-signed PSBT back
+```
+
 ## Conventions (match `nostr-agentic-identity`)
 
 MIT · dual ESM/CJS + browser build · vitest · eslint/prettier · typedoc · `scripts/
 smoke.mjs`. Runtime deps limited to the audited set: `@scure/bip32`, `@scure/bip39`,
-`@scure/base`, `@noble/hashes` (pinned exact; the same stack `hj-pay` passed two
-security rounds on). `nostr-nsec-seedphrase` is an **optional peer** used only by
-`mnemonicToIdentity` — the core zpub derivation has no Nostr dependency.
+`@scure/base`, `@noble/hashes`, and `@scure/btc-signer` (the PSBT layer; audited stack,
+`npm audit --omit=dev` clean at add time) — all pinned exact. `nostr-nsec-seedphrase` is
+an **optional peer** used only by `mnemonicToIdentity` — the core zpub derivation has no
+Nostr dependency.
 
 ## Non-goals
 
-Not a wallet, not a signer, not a coin-selection/PSBT builder, not custody, not a relay
-client. It derives public receiving keys from a seed and reads addresses from a zpub —
-nothing that spends. Spending stays in the enclave/hardware where the seed lives.
+Not a wallet, not custody, not a relay client. Not coin-selection, not a fee estimator,
+not a UTXO fetcher, not a broadcaster — and **never a CoinJoin coordinator/pool/mixer**.
+It derives public receiving keys, reads addresses off a zpub, and builds/signs PSBTs for
+inputs the caller already owns. Signing stays in the enclave/hardware where the key
+lives; broadcasting and live chain state stay in the separate wallet/network layer.

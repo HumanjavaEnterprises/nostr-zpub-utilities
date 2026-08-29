@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Notes
+- The PSBT layer adds `@scure/btc-signer` as a hard dependency (audited; `npm audit --omit=dev` clean),
+  so watch-only consumers install it too; ESM consumers tree-shake it when unused.
+- Signing: prefer raw 32-byte keys; when signing a *loaded* PSBT, validate inputs/amounts first (standard
+  PSBT trust rule). `combine` cannot redirect funds — a hostile partner can at worst inject a bogus
+  partial sig that fails finalization (DoS, not theft).
+
+### Added
+- **PSBT layer for BTC/LTC (`src/psbt.ts`) — CoinJoin-COMPATIBLE, never a coordinator.** A thin, PURE
+  (no network) wrapper over `@scure/btc-signer` for the receiving-side spend. New dependency:
+  `@scure/btc-signer` (pinned exact; `npm audit --omit=dev` reported **0 vulnerabilities** at add time).
+  - `Psbt` class + `createPsbt(config, opts?)` — build a PSBT/`Transaction` for BTC or LTC (mainnet or
+    testnet): `addInput` (caller supplies the prevout / `witnessUtxo` — **we never fetch UTXOs**),
+    `addOutput` (by address or raw script), `toPsbt`/`Psbt.fromPsbt` (serialize / accept an
+    externally-supplied shared PSBT), `combine` (merge participants' partial signatures),
+    `isInputSigned`, and `finalizeAndExtract` (raw tx hex + txid — **we never broadcast**).
+  - `signOnlyOurInputs(signingKey, ourIndices)` — the load-bearing CoinJoin-compatible primitive: signs
+    ONLY the input indices we declare we own, and never touches the rest. Built on `@scure/btc-signer`'s
+    `signIdx` (its authors' documented safe primitive for exactly this mixer/join workflow). ⛔ **Signing
+    is ENCLAVE/CLIENT-ONLY** — it touches a private key; building/merging/finalizing need no private
+    material and are safe anywhere.
+  - Helpers `psbtNetworkFor(asset, network?)` and `p2wpkhScript(pubkey, asset, network?)`; new types
+    `PsbtConfig`, `PsbtOptions`, `PsbtInput`, `PsbtOutput`, `PsbtNetwork`, `PsbtSigningKey`, `SignResult`.
+  - **CoinJoin posture: participate, never coordinate.** We ship no coordinator, pool, or mixing service
+    (real regulatory exposure — see design doc Decision 3); being join-compatible is not that. LTC has no
+    CoinJoin ecosystem (MWEB is its privacy path, out of scope); LTC support lets one spend/merge API
+    cover both chains.
+  - Tests (`test/psbt.test.ts`, 6 cases, no network): a signed+finalized tx round-trips / re-parses via
+    `@scure/btc-signer` (BTC and LTC); with a multi-input PSBT we own only some indices, we sign ONLY
+    those (others stay unsigned); we refuse to sign an input we cannot actually sign; and a two-party
+    build → sign-own-input → combine → finalize flow.
+  - Docs: SPEC.md and README.md gain a spend-side PSBT section; PSBT removed from the non-goals (it is now
+    in scope, with coordinator/broadcast/UTXO-fetch remaining out of scope).
+
 ## [0.1.1] - 2026-08-29
 
 ### Added

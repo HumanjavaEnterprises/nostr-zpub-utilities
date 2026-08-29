@@ -52,3 +52,23 @@ export {
   AmbiguousAssetError,
   type ZpubCheck,
 } from './derive.js';
+
+// ── PSBT (BTC/LTC, CoinJoin-COMPATIBLE) ────────────────────────────────────────
+// Build / merge / serialize / finalize are safe anywhere; ⛔ signOnlyOurInputs is
+// ENCLAVE/CLIENT-ONLY (it touches a private key). We participate in a CoinJoin; we
+// never coordinate one. No network: no UTXO fetching, no broadcast.
+export {
+  Psbt,
+  createPsbt,
+  psbtNetworkFor,
+  p2wpkhScript,
+} from './psbt.js';
+export type {
+  PsbtConfig,
+  PsbtOptions,
+  PsbtInput,
+  PsbtOutput,
+  PsbtNetwork,
+  PsbtSigningKey,
+  SignResult,
+} from './psbt.js';
