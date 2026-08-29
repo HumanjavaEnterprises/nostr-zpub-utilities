@@ -1,4 +1,4 @@
-# nostr-zpub-utilities — deriving receiving keys from a Nostr identity root
+# nostr-zpub-utils — deriving receiving keys from a Nostr identity root
 
 **One mnemonic, two lives: your `npub` (who you are) and your `zpub` (where you get
 paid) — derived from the same seed, on the same curve.** Where `nostr-agentic-identity`

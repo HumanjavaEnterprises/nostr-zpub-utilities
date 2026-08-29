@@ -7,7 +7,7 @@ const result = await build({
   sourcemap: true,
   format: 'iife',
   globalName: 'NostrZpubUtilities',
-  outfile: 'dist/browser/nostr-zpub-utilities.min.js',
+  outfile: 'dist/browser/nostr-zpub-utils.min.js',
   target: ['es2020'],
   platform: 'browser',
   define: {

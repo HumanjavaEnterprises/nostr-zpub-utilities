@@ -11,7 +11,7 @@ We release patches for security vulnerabilities. Which versions are eligible for
 
 ## Threat model — the seed boundary is the whole safety of this library
 
-`nostr-zpub-utilities` derives PUBLIC receiving keys from a BIP39 seed. Its safety rests on one boundary:
+`nostr-zpub-utils` derives PUBLIC receiving keys from a BIP39 seed. Its safety rests on one boundary:
 
 - **Seed-side functions (`mnemonicToZpub`, `seedToZpub`, `mnemonicToIdentity`) are ENCLAVE/CLIENT-ONLY.**
   They touch the seed and MUST run only where the seed is allowed to live — a browser, a hardware enclave,
@@ -40,7 +40,7 @@ Runtime dependencies are limited to the estate's audited set, pinned exact: `@sc
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities through GitHub's Security Advisory feature at [https://github.com/humanjavaenterprises/nostr-zpub-utilities/security/advisories/new](https://github.com/humanjavaenterprises/nostr-zpub-utilities/security/advisories/new).
+Please report security vulnerabilities through GitHub's Security Advisory feature at [https://github.com/humanjavaenterprises/nostr-zpub-utils/security/advisories/new](https://github.com/humanjavaenterprises/nostr-zpub-utils/security/advisories/new).
 
 The team will acknowledge your report within 48 hours, and will send a more detailed response within 72 hours indicating the next steps in handling your report.
 

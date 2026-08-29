@@ -1,12 +1,12 @@
-# nostr-zpub-utilities
+# nostr-zpub-utils
 
 <div align="center">
 
-[![npm version](https://img.shields.io/npm/v/nostr-zpub-utilities.svg)](https://www.npmjs.com/package/nostr-zpub-utilities)
-[![npm downloads](https://img.shields.io/npm/dm/nostr-zpub-utilities.svg)](https://www.npmjs.com/package/nostr-zpub-utilities)
-[![License](https://img.shields.io/npm/l/nostr-zpub-utilities.svg)](https://github.com/humanjavaenterprises/nostr-zpub-utilities/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/nostr-zpub-utils.svg)](https://www.npmjs.com/package/nostr-zpub-utils)
+[![npm downloads](https://img.shields.io/npm/dm/nostr-zpub-utils.svg)](https://www.npmjs.com/package/nostr-zpub-utils)
+[![License](https://img.shields.io/npm/l/nostr-zpub-utils.svg)](https://github.com/humanjavaenterprises/nostr-zpub-utils/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
-[![Test Status](https://img.shields.io/github/actions/workflow/status/humanjavaenterprises/nostr-zpub-utilities/ci.yml?branch=main&label=tests)](https://github.com/humanjavaenterprises/nostr-zpub-utilities/actions)
+[![Test Status](https://img.shields.io/github/actions/workflow/status/humanjavaenterprises/nostr-zpub-utils/ci.yml?branch=main&label=tests)](https://github.com/humanjavaenterprises/nostr-zpub-utils/actions)
 [![Code Style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://prettier.io/)
 
 </div>
@@ -68,7 +68,7 @@ Account level (depth 3) is the export unit — the shape `hj-pay` expects.
 ## Installation
 
 ```bash
-npm install nostr-zpub-utilities
+npm install nostr-zpub-utils
 # optional — only needed for mnemonicToIdentity's npub derivation:
 npm install nostr-nsec-seedphrase
 ```
@@ -82,7 +82,7 @@ Runtime deps are limited to the estate's audited stack (pinned exact): `@scure/b
 ### Seed-side — derive receiving keys (ENCLAVE/CLIENT ONLY)
 
 ```typescript
-import { mnemonicToZpub, mnemonicToIdentity } from 'nostr-zpub-utilities';
+import { mnemonicToZpub, mnemonicToIdentity } from 'nostr-zpub-utils';
 
 // A BTC BIP84 account key from the seed root:
 const { zpub, path, fingerprint } = mnemonicToZpub(MNEMONIC, { asset: 'BTC' });
@@ -98,7 +98,7 @@ const { npub, zpubBTC, zpubLTC } = await mnemonicToIdentity(MNEMONIC);
 ### Public-side — read addresses off a zpub (safe anywhere, incl. a server)
 
 ```typescript
-import { zpubToAddress, inspectZpub, assertPublicOnly, checkXpub, assertDistinctXpubs } from 'nostr-zpub-utilities';
+import { zpubToAddress, inspectZpub, assertPublicOnly, checkXpub, assertDistinctXpubs } from 'nostr-zpub-utils';
 
 assertPublicOnly(zpub);                                    // throws on ANY private-key shape
 inspectZpub(zpub);                                         // { label, asset, network, purpose, depth, fingerprint }
@@ -137,12 +137,12 @@ Dual ESM + CommonJS, with a browser bundle and full type declarations.
 
 ### ESM (recommended)
 ```typescript
-import { mnemonicToZpub } from 'nostr-zpub-utilities';
+import { mnemonicToZpub } from 'nostr-zpub-utils';
 ```
 
 ### CommonJS
 ```javascript
-const { mnemonicToZpub } = require('nostr-zpub-utilities');
+const { mnemonicToZpub } = require('nostr-zpub-utils');
 ```
 
 ## Non-goals

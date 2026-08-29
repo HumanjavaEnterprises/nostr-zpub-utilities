@@ -1,5 +1,5 @@
 /**
- * nostr-zpub-utilities — derive Bitcoin/Litecoin receiving keys from a Nostr identity root.
+ * nostr-zpub-utils — derive Bitcoin/Litecoin receiving keys from a Nostr identity root.
  *
  * One BIP39 mnemonic, two lives: the `npub` (who you are) and the `zpub` (where you
  * get paid), derived from the same seed on the same curve. The authoritative spec is

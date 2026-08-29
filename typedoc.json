@@ -2,7 +2,7 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["./src/index.ts"],
   "out": "docs",
-  "name": "nostr-zpub-utilities",
+  "name": "nostr-zpub-utils",
   "includeVersion": true,
   "excludePrivate": true,
   "excludeProtected": true,
@@ -19,8 +19,8 @@
     "*"
   ],
   "navigationLinks": {
-    "GitHub": "https://github.com/humanjavaenterprises/nostr-zpub-utilities",
-    "Standard": "https://github.com/humanjavaenterprises/nostr-zpub-utilities/blob/main/SPEC.md"
+    "GitHub": "https://github.com/humanjavaenterprises/nostr-zpub-utils",
+    "Standard": "https://github.com/humanjavaenterprises/nostr-zpub-utils/blob/main/SPEC.md"
   },
   "validation": {
     "invalidLink": true,

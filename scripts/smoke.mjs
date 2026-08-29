@@ -60,7 +60,7 @@ function checkThrows(label, description, fn) {
   check(label, description, threw, true);
 }
 
-console.log('nostr-zpub-utilities — smoke test over the BUILT dist');
+console.log('nostr-zpub-utils — smoke test over the BUILT dist');
 console.log(`  targets: ${targets.map((t) => t.label.split(' ')[0]).join(', ')}  ·  reject fixtures: ${rejects.length}`);
 console.log('');
 

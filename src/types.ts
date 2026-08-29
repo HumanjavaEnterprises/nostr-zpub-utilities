@@ -1,5 +1,5 @@
 /**
- * Public types for nostr-zpub-utilities.
+ * Public types for nostr-zpub-utils.
  *
  * The library derives PUBLIC receiving keys (a `zpub`/`Ltub` and the addresses under
  * it) from the same BIP39 seed root that yields a Nostr identity. Every shape here

@@ -1,9 +1,9 @@
-# TODO — nostr-zpub-utilities
+# TODO — nostr-zpub-utils
 
 ## Before first npm publish
 
-- [ ] Confirm the npm package name `nostr-zpub-utilities` is available / reserved.
-- [ ] Verify the `HumanjavaEnterprises/nostr-zpub-utilities` GitHub repo, CI badge slug (`ci.yml`), and
+- [ ] Confirm the npm package name `nostr-zpub-utils` is available / reserved.
+- [ ] Verify the `HumanjavaEnterprises/nostr-zpub-utils` GitHub repo, CI badge slug (`ci.yml`), and
       security-advisory link are correct.
 - [ ] Decide whether to commit generated `docs/` or leave to CI.
 

@@ -1,17 +1,17 @@
 {
-  "name": "nostr-zpub-utilities",
+  "name": "nostr-zpub-utils",
   "version": "0.1.1",
   "description": "Derive Bitcoin/Litecoin receiving keys (BIP84 zpub → addresses) from the same BIP39 seed root that yields a Nostr identity. Seed-side derivation is enclave-only and outputs PUBLIC material exclusively; the watch-only public side mirrors hj-pay byte-for-byte. ESM + CommonJS.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "browser": "./dist/browser/nostr-zpub-utilities.min.js",
+  "browser": "./dist/browser/nostr-zpub-utils.min.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "workerd": "./dist/index.js",
       "worker": "./dist/index.js",
-      "browser": "./dist/browser/nostr-zpub-utilities.min.js",
+      "browser": "./dist/browser/nostr-zpub-utils.min.js",
       "import": "./dist/index.js",
       "require": "./dist/cjs/index.js"
     }
@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HumanjavaEnterprises/nostr-zpub-utilities.git"
+    "url": "git+https://github.com/HumanjavaEnterprises/nostr-zpub-utils.git"
   },
   "keywords": [
     "nostr",
@@ -59,9 +59,9 @@
   "author": "vveerrgg",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/HumanjavaEnterprises/nostr-zpub-utilities/issues"
+    "url": "https://github.com/HumanjavaEnterprises/nostr-zpub-utils/issues"
   },
-  "homepage": "https://github.com/HumanjavaEnterprises/nostr-zpub-utilities#readme",
+  "homepage": "https://github.com/HumanjavaEnterprises/nostr-zpub-utils#readme",
   "dependencies": {
     "@noble/hashes": "2.3.0",
     "@scure/base": "2.3.0",
