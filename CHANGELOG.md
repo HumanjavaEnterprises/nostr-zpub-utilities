@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-29
+
+### Added
+- README: a prominent **"one seed is one root, not one wallet"** safety box — the mnemonic is both
+  the agent's `npub` and its receiving keys (sibling NIP-06 / BIP84 paths, one shared root); losing
+  or compromising it loses/compromises both; and a restatement that the library never guesses a
+  chain (definite prefix resolves, ambiguous one throws — no silent BTC default).
+
+### Notes
+- Documentation only. No code, API, or derivation-path change; `asset` behaviour is unchanged
+  (it already refuses to guess rather than defaulting).
 ### Fixed
 - **Testnet coin_type (derivation bug).** Seed-side derivation used the mainnet
   coin_type on every network, so `network: 'testnet'` derived at `m/84'/0'/0'`

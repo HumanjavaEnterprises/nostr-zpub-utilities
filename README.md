@@ -23,6 +23,18 @@ defines *who an agent is*, this defines *where value reaches it* — Bitcoin and
 > audited-stack expression of it. Prior art it composes: `@scure/bip32` + `@scure/bip39` (audited HD
 > derivation), SLIP-132, BIP84/44, and `nostr-nsec-seedphrase` (BIP39 ↔ Nostr keys, optional).
 
+> ### ⚠️ One seed is one root, not one wallet — read this before shipping
+> This mnemonic is **both the agent's voice and its treasury.** The same seed derives the `npub`
+> that signs its words (NIP-06, `m/44'/1237'/0'/0/0`) and the receiving keys that hold its money
+> (BIP84, `m/84'/coin'/0'`). Those are **sibling derivation paths, not the same key** — but they
+> share one root. So:
+> - **Losing the seed loses both** the business identity and the coin inbox. Back it up like money.
+> - **Compromising the seed compromises both.** Consider a dedicated account index (or a separate
+>   seed) for agent spend vs. human funds, so a hot agent key is not your cold treasury.
+> - The library **never guesses a chain.** A definite-prefix key resolves its asset; an ambiguous
+>   one makes you pass `asset` or it throws. It will not silently hand you a BTC address for an LTC
+>   key. Keep it that way in your own call sites.
+
 ## The one hard boundary (the whole safety of the library)
 
 **Deriving a zpub touches the SEED. The seed is private material.** So the library has two clearly-separated

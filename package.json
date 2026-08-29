@@ -1,6 +1,6 @@
 {
   "name": "nostr-zpub-utilities",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Derive Bitcoin/Litecoin receiving keys (BIP84 zpub → addresses) from the same BIP39 seed root that yields a Nostr identity. Seed-side derivation is enclave-only and outputs PUBLIC material exclusively; the watch-only public side mirrors hj-pay byte-for-byte. ESM + CommonJS.",
   "type": "module",
   "main": "./dist/index.js",
