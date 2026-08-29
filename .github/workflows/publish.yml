@@ -28,7 +28,6 @@ jobs:
         with:
           node-version: '24'                 # trusted publishing needs node >= 22.14.0
           registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false       # never cache in a release build
 
       # Node 24 ships npm 11.x; trusted publishing needs >= 11.5.1. Pin forward.
       - name: Upgrade npm
