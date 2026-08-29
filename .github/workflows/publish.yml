@@ -1,0 +1,77 @@
+name: Publish Package
+
+# Publishes to npm via OIDC trusted publishing — no token, no secret.
+# GitHub mints a short-lived identity token; npm verifies it came from THIS repo
+# and THIS workflow file. Configure at:
+#   npmjs.com -> package -> Settings -> Trusted Publisher
+#
+# NOTE: OIDC cannot perform a package's FIRST publish (npm requires the package to
+# exist before a trusted publisher can be configured). 0.1.0 was published manually;
+# every release from here runs through this workflow.
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write        # REQUIRED: lets GitHub mint the OIDC token npm verifies
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'                 # trusted publishing needs node >= 22.14.0
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false       # never cache in a release build
+
+      # Node 24 ships npm 11.x; trusted publishing needs >= 11.5.1. Pin forward.
+      - name: Upgrade npm
+        run: |
+          npm install -g npm@latest
+          npm --version
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run smoke
+
+      # A release tag that disagrees with package.json means someone forgot a bump.
+      # Fail loudly rather than publishing a version nobody expects.
+      - name: Check tag matches package.json
+        if: github.event_name == 'release'
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          TAG=${GITHUB_REF_NAME#v}
+          echo "package.json=$PKG  tag=$TAG"
+          if [ "$PKG" != "$TAG" ]; then
+            echo "::error::version mismatch — package.json is $PKG but the tag is $TAG"
+            exit 1
+          fi
+
+      # npm is append-only: republishing an existing version is a hard error. Skip
+      # instead, so a re-run or a release cut for an already-published version is a
+      # no-op rather than a red X.
+      - name: Skip if this version is already on npm
+        id: published
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VER=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VER" version >/dev/null 2>&1; then
+            echo "$NAME@$VER is already published — nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # No NODE_AUTH_TOKEN. OIDC handles auth; npm generates build provenance
+      # automatically for trusted publishes.
+      - name: Publish
+        if: steps.published.outputs.skip == 'false'
+        run: npm publish
