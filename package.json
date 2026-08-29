@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/humanjavaenterprises/nostr-zpub-utilities.git"
+    "url": "git+https://github.com/HumanjavaEnterprises/nostr-zpub-utilities.git"
   },
   "keywords": [
     "nostr",
@@ -59,9 +59,9 @@
   "author": "vveerrgg",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/humanjavaenterprises/nostr-zpub-utilities/issues"
+    "url": "https://github.com/HumanjavaEnterprises/nostr-zpub-utilities/issues"
   },
-  "homepage": "https://github.com/humanjavaenterprises/nostr-zpub-utilities#readme",
+  "homepage": "https://github.com/HumanjavaEnterprises/nostr-zpub-utilities#readme",
   "dependencies": {
     "@noble/hashes": "2.3.0",
     "@scure/base": "2.3.0",
