@@ -40,6 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     build → sign-own-input → combine → finalize flow.
   - Docs: SPEC.md and README.md gain a spend-side PSBT section; PSBT removed from the non-goals (it is now
     in scope, with coordinator/broadcast/UTXO-fetch remaining out of scope).
+- **QA harness (`qa/`) — agent-runnable, dev-only, NOT shipped.** Two modes behind one dispatcher
+  (`node qa/run.mjs`; npm scripts `qa` / `qa:testnet`), mirroring the sibling `nostr-crosschain-wallet`
+  harness (same flags, `--json` shape, and exit-code discipline: `0` pass, `1` failure, `2` bad arg).
+  - `qa/synthetic.mjs` — OFFLINE (no network), over the built `dist/`, per asset (BTC/LTC): the published
+    BIP84 `abandon…about` derivation vectors plus N seeded-random cases (reproducible sha256-counter PRNG,
+    `--count`/`--seed`), and the load-bearing PSBT safety property — a 2-input PSBT owned only at index 0
+    signs input 0 and leaves input 1 untouched; declaring an unowned index throws (never silent-signs);
+    `finalizeAndExtract` refuses while incomplete; a fully-owned PSBT finalizes and the raw hex round-trips
+    via `Psbt.fromPsbt` and `@scure/btc-signer`; no private-key material appears in any output.
+  - `qa/testnet.mjs` — GATED, env-gated, network. Derives a testnet receive address, does a watch-only READ
+    of balance/UTXOs from a Blockbook-style indexer, then builds + signs a PSBT and OUTPUTS the raw signed
+    hex + txid + explorer hint for the operator to broadcast EXTERNALLY (zpub-utils does not broadcast).
+    Missing env for an asset → SKIP. Keys are supplied via env only, never committed. Never run in CI.
+  - `qa/` is excluded from the npm tarball (`files` allowlist + `.npmignore`).
 
 ## [0.1.1] - 2026-08-29
 

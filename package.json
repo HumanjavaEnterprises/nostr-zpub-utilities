@@ -22,6 +22,8 @@
     "build:browser": "node esbuild.browser.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "qa": "node qa/run.mjs",
+    "qa:testnet": "node qa/run.mjs --testnet",
     "smoke": "npm run build && node scripts/smoke.mjs",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
